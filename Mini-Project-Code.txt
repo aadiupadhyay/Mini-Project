@@ -1,0 +1,149 @@
+import numpy as np # linear algebra
+import pandas as pd # data processing, CSV file I/O (e.g. p|d.read_csv)
+import os
+for dirname, _, filenames in os.walk('/kaggle/input'):
+    for filename in filenames:
+        print(os.path.join(dirname, filename))
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+from scipy.stats import norm
+from sklearn.preprocessing import StandardScaler
+from scipy import stats
+
+import warnings
+warnings.filterwarnings('ignore')
+%matplotlib inline
+
+#Training dataset
+df_train = pd.read_csv('/kaggle/input/house-prices-advanced-regression-techniques/train.csv')
+
+## look at the columns 
+df_train.columns
+
+# Overview of the dataset
+df_train.describe().transpose()
+#df_train.isna().sum()
+
+# to display maximum rows
+pd.set_option('display.max_columns', None)
+pd.set_option('display.max_rows', None)
+
+# Checking the missing values
+print(df_train.isna().sum().transpose())
+
+# dropping columns where missing values are more than 20%
+list_drop = ['LotFrontage', 'Alley', 'PoolQC','Fence','MiscFeature', 'FireplaceQu']
+df_train = df_train.drop(list_drop, axis = 1)
+imputation_col = ['GarageType','GarageYrBlt','GarageFinish','GarageQual', 'BsmtQual',
+                  'BsmtCond','BsmtExposure','BsmtFinType1','BsmtFinType2']
+
+# imputation with mode
+for col in imputation_col:
+    df_train[col] = df_train[col].fillna((df_train[col].mode()), inplace=True)
+                               
+## Checking for the corr plot of the variables
+#correlation matrix
+corrmat = df_train.corr()
+f, ax = plt.subplots(figsize=(12, 9))
+sns.heatmap(corrmat, vmax=.8, square=True)
+
+# Ploting Scatter plot with some imp columns
+#scatterplot
+sns.set()
+cols = ['SalePrice', 'OverallQual', 'GrLivArea', 'GarageCars', 'TotalBsmtSF', 'FullBath', 'YearBuilt']
+sns.pairplot(df_train[cols], size = 2.5)
+plt.show();
+
+sns.distplot(df_train['SalePrice'] , fit=norm);
+
+# Get the fitted parameters used by the function
+(mu, sigma) = norm.fit(df_train['SalePrice'])
+print( '\n mu = {:.2f} and sigma = {:.2f}\n'.format(mu, sigma))
+
+#Now plot the distribution
+plt.legend(['Normal dist. ($\mu=$ {:.2f} and $\sigma=$ {:.2f} )'.format(mu, sigma)], 
+loc='best')
+plt.ylabel('Frequency')
+plt.title('SalePrice distribution')
+#Get also the QQ-plot
+fig = plt.figure()
+res = stats.probplot(df_train['SalePrice'], plot=plt)
+plt.show()
+# log transformation of the distribution
+df_train["SalePrice1"] = np.log1p(df_train["SalePrice"])
+
+#Check the new distribution 
+sns.distplot(df_train['SalePrice1'] , fit=norm);
+
+# Get the fitted parameters used by the function
+(mu, sigma) = norm.fit(df_train['SalePrice1'])
+print( '\n mu = {:.2f} and sigma = {:.2f}\n'.format(mu, sigma))
+
+#Now plot the distribution
+plt.legend(['Normal dist. ($\mu=$ {:.2f} and $\sigma=$ {:.2f} )'.format(mu, sigma)],
+            loc='best')
+plt.ylabel('Frequency')
+plt.title('SalePrice distribution')
+
+#Get also the QQ-plot
+fig = plt.figure()
+res = stats.probplot(df_train['SalePrice1'], plot=plt)
+plt.show()
+#bivariate analysis saleprice/grlivarea
+var = 'GrLivArea'
+data = pd.concat([df_train['SalePrice'], df_train[var]], axis=1)
+data.plot.scatter(x=var, y='SalePrice', ylim=(0,800000))
+
+#box plot overallqual/saleprice
+var = 'OverallQual'
+data = pd.concat([df_train['SalePrice'], df_train[var]], axis=1)
+f, ax = plt.subplots(figsize=(8, 6))
+fig = sns.boxplot(x=var, y="SalePrice", data=data)
+fig.axis(ymin=0, ymax=800000);
+from sklearn.linear_model import LinearRegression
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+import warnings
+warnings.filterwarnings('ignore')
+
+train_df = pd.read_csv('/kaggle/input/house-prices-advanced-regression-techniques/train.csv')
+train_df.head() 
+k = 10
+corrmat = train_df.corr()
+cols = corrmat.nlargest(k, 'SalePrice')['SalePrice'].index
+cm = np.corrcoef(train_df[cols].values.T)
+sns.set(font_scale=1.25)
+hm = sns.heatmap(cm,
+cbar=True,
+ annot=True,
+square=True
+fmt='.2f',
+annot_kws={'size': 10},
+yticklabels=cols.values,
+xticklabels=cols.values)
+plt.show()
+x_train = train_df[['OverallQual', 'GrLivArea', 'GarageCars', 'GarageArea', 'TotalBsmtSF', '1stFlrSF', 'FullBath', 'TotRmsAbvGrd', 'YearBuilt']]
+x_train.head()
+x_train.isnull().sum()
+y_train = train_df['SalePrice'].values
+slr = LinearRegression()
+slr.fit(x_train, y_train)
+print('slope ： {:0.2f}'.format(slr.coef_[0]))
+print('intercept : {:0.2f}'.format(slr.intercept_))
+test_df = pd.read_csv('/kaggle/input/house-prices-advanced-regression-techniques/test.csv')
+test_df.head()
+x_test = test_df[['OverallQual', 'GrLivArea', 'GarageCars', 'GarageArea', 'TotalBsmtSF', '1stFlrSF', 'FullBath', 'TotRmsAbvGrd', 'YearBuilt']]
+x_test.head()
+x_test.isnull().sum()
+x_test['GarageCars'].fillna(test_df.GarageCars.median(), inplace = True)
+x_test['GarageArea'].fillna(test_df.GarageArea.mean(), inplace = True)
+x_test['TotalBsmtSF'].fillna(test_df.GarageArea.mean(), inplace = True)
+x_test.isnull().sum()
+y_test = slr.predict(x_test)
+sub = pd.DataFrame({'Id':test_df['Id'].values, 'SalePrice':y_test})
+sub.head(10)
